@@ -1,7 +1,6 @@
 #!/usr/bin/python3
-#%%
 # temporary workaround to run with ipython
-sys.argv = ['']
+# sys.argv = ['']
 
 # Parser for command-line options, arguments and sub-commands
 import argparse
@@ -29,7 +28,7 @@ parser.add_argument(
     help='append to existing XLSX file')
 parser.add_argument(
     '-o', '--output',
-    default='out.xlsx',
+    default='/media/dfsP/DIGITALE MIKROSKOPIE/digital slides.xlsx',
     help='set output filename')
 parser.add_argument(
     '-v', '--verbose',
@@ -176,5 +175,3 @@ workbook.close()
 if arguments.verbose:
     print('  total entries:', counter['all'] - counter['other'])
 print('All done and exiting.')
-
-# %%
