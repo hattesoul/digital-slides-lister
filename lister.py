@@ -1,3 +1,5 @@
+# #%%
+
 #!/usr/bin/python3
 # temporary workaround to run with ipython
 # sys.argv = ['']
@@ -57,6 +59,9 @@ import re
 # System-specific parameters and functions
 import sys
 
+# Basic date and time types
+import datetime
+
 if arguments.verbose:
     print(' done')
 
@@ -74,6 +79,8 @@ for ext in arguments.extensions:
     maxLengths[ext] = dict()
     maxLengths[ext]['path'] = 0
     maxLengths[ext]['name'] = 0
+    maxLengths[ext]['date'] = 0
+    maxLengths[ext]['size'] = 0
 if arguments.verbose:
     print(' done')
 
@@ -92,14 +99,20 @@ for item in fileList:
         counter[tmpFile['suffix']] += 1
         tmpFile['path'] = '/'.join(item.parts[:-1])[1:]
         tmpFile['name'] = item.name
+        tmpFile['date'] = datetime.datetime.fromtimestamp(item.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
+        tmpFile['size'] = item.stat().st_size
 
         # determine longest entry for column width
         if len(tmpFile['path']) > maxLengths[tmpFile['suffix']]['path']:
             maxLengths[tmpFile['suffix']]['path'] = len(tmpFile['path'])
         if len(tmpFile['name']) > maxLengths[tmpFile['suffix']]['name']:
             maxLengths[tmpFile['suffix']]['name'] = len(tmpFile['name'])
+        if len(tmpFile['date']) > maxLengths[tmpFile['suffix']]['date']:
+            maxLengths[tmpFile['suffix']]['date'] = len(tmpFile['date'])
+        if len(str(tmpFile['size'])) > maxLengths[tmpFile['suffix']]['size']:
+            maxLengths[tmpFile['suffix']]['size'] = len(str(tmpFile['size']))
         files[tmpFile['suffix']].append(
-            [counter[tmpFile['suffix']], tmpFile['suffix'], tmpFile['path'], tmpFile['name']])
+            [counter[tmpFile['suffix']], tmpFile['suffix'], tmpFile['path'], tmpFile['name'], tmpFile['date'], tmpFile['size']])
     else:
         if item.is_file():
             counter['all'] += 1
@@ -123,7 +136,8 @@ if arguments.verbose:
     print(' done')
 
 # table headers
-workbookHeader = ['#', 'extension', 'file path', 'file name']
+workbookHeader = ['#', 'extension', 'file path',
+                  'file name', 'file date', 'file size']
 
 # iterate over all extensions
 if arguments.verbose:
@@ -145,32 +159,38 @@ for ext in arguments.extensions:
         if workbook.sheetname_count == 0:
             worksheet = workbook.add_worksheet()
 
-    # write formatted header row
+    # declare different formats
     headerBold = workbook.add_format({'bold': True})
     headerBoldRight = workbook.add_format({'bold': True, 'align': 'right'})
+    numberSpace = workbook.add_format(
+        {'num_format': '### ### ### ### ### ##0'})
     for i in range(len(workbookHeader)):
-        worksheet.write(0, i, workbookHeader[i], (headerBold if i >= 1 else headerBoldRight))
+        worksheet.write(0, i, workbookHeader[i], (headerBoldRight if (i == 0 or i == 5) else headerBold))
 
     # freeze first row
     worksheet.freeze_panes(1, 0)
 
     # set autofilter
-    worksheet.autofilter(0, 0, 1, 3)
+    worksheet.autofilter(0, 0, 1, 5)
 
     # fill in entries
     if arguments.splitByExtension:
-        for number, filetype, path, filename in tuple(files[ext]):
-            worksheet.write(row, col,     number)
+        for number, filetype, path, filename, filedate, filesize in tuple(files[ext]):
+            worksheet.write(row, col,     number, numberSpace)
             worksheet.write(row, col + 1, filetype)
             worksheet.write(row, col + 2, path)
             worksheet.write(row, col + 3, filename)
+            worksheet.write(row, col + 4, filedate)
+            worksheet.write(row, col + 5, filesize, numberSpace)
             row += 1
     else:
         for number, filetype, path, filename in tuple(files[ext]):
-            worksheet.write(row, col,     row)
+            worksheet.write(row, col,     row, numberSpace)
             worksheet.write(row, col + 1, filetype)
             worksheet.write(row, col + 2, path)
             worksheet.write(row, col + 3, filename)
+            worksheet.write(row, col + 4, filedate)
+            worksheet.write(row, col + 5, filesize, numberSpace)
             row += 1
     if row == 1:
         worksheet.write(row, col, 'no files found')
@@ -181,6 +201,8 @@ for ext in arguments.extensions:
         worksheet.set_column(1, 1, max(len(ext), len(workbookHeader[1])) + 2)
         worksheet.set_column(2, 2, max(maxLengths[ext]['path'], len(workbookHeader[2])) + 2)
         worksheet.set_column(3, 3, max(maxLengths[ext]['name'], len(workbookHeader[3])) + 2)
+        worksheet.set_column(4, 4, max(maxLengths[ext]['date'], len(workbookHeader[4])) + 2)
+        worksheet.set_column(5, 5, max(maxLengths[ext]['size'], len(workbookHeader[5])) + 2)
     if arguments.verbose:
         print(' done')
 
@@ -192,6 +214,10 @@ if not arguments.splitByExtension:
         2, 2, max([maxLengths[i]['path'] for i in maxLengths] + [len(workbookHeader[2])]) + 2)
     worksheet.set_column(
         3, 3, max([maxLengths[i]['name'] for i in maxLengths] + [len(workbookHeader[3])]) + 2)
+    worksheet.set_column(
+        4, 4, max([maxLengths[i]['date'] for i in maxLengths] + [len(workbookHeader[4])]) + 2)
+    worksheet.set_column(
+        5, 5, max([maxLengths[i]['size'] for i in maxLengths] + [len(workbookHeader[5])]) + 2)
 
 # close workbook
 workbook.close()
