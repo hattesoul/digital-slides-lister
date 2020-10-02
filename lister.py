@@ -1,5 +1,3 @@
-#%%
-
 #!/usr/bin/python3
 # temporary workaround to run with ipython
 # sys.argv = ['']
@@ -28,8 +26,8 @@ parser.add_argument(
     help='split worksheets by file extensions')
 parser.add_argument(
     '-o', '--output',
-    # default='/media/dfsP/DIGITALE MIKROSKOPIE/digital slides.xlsx',
-    default='digital slides.xlsx',
+    default='/media/dfsP/DIGITALE MIKROSKOPIE/digital slides.xlsx',
+    # default='digital slides.xlsx',
     help='set output filename')
 parser.add_argument(
     '-v', '--verbose',
@@ -188,12 +186,6 @@ for ext in arguments.extensions:
 
 # adjust column widths
 if not arguments.splitByExtension:
-    print('row:', len(str(row)))
-    print('len:', len(str(counter['all'] - counter['other'])) + 2)
-    print('max path:', max([maxLengths[i]['path']
-                                for i in maxLengths] + [len(workbookHeader[2])]) + 2)
-    print('max name:', max([maxLengths[i]['name']
-                                for i in maxLengths] + [len(workbookHeader[3])]) + 2)
     worksheet.set_column(0, 0, len(str(row)) + 2)
     worksheet.set_column(1, 1, max([len(i) for i in arguments.extensions] + [len(workbookHeader[1])]) + 2)
     worksheet.set_column(
@@ -207,5 +199,3 @@ workbook.close()
 if arguments.verbose:
     print('  total entries:', counter['all'] - counter['other'])
 print('All done and exiting.')
-
-# %%
