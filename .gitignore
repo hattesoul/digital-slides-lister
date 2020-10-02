@@ -1,5 +1,3 @@
-out.xlsx
-.~lock.out.xlsx#
-out2.xlsx
+*.xlsx
+.xlsx#
 .vscode/settings.json
-digital slides.xlsx
