@@ -1,3 +1,5 @@
+#%%
+
 #!/usr/bin/python3
 # temporary workaround to run with ipython
 # sys.argv = ['']
@@ -19,16 +21,15 @@ parser.add_argument(
     default=['mrxs', 'ndpi', 'svs', 'vmic',
              'vsf'],#, 'xlsx', 'docx', 'txt', 'csv'],
     help='set the file extensions')
-# parser.add_argument('-s', '--splitByExtension',
-#                     action='store_true',
-#                     help='split worksheets by file extensions')
 parser.add_argument(
-    '-a', '--append',
+    '-s', '--splitByExtension',
     action='store_true',
-    help='append to existing XLSX file')
+    default='True',
+    help='split worksheets by file extensions')
 parser.add_argument(
     '-o', '--output',
-    default='/media/dfsP/DIGITALE MIKROSKOPIE/digital slides.xlsx',
+    # default='/media/dfsP/DIGITALE MIKROSKOPIE/digital slides.xlsx',
+    default='digital slides.xlsx',
     help='set output filename')
 parser.add_argument(
     '-v', '--verbose',
@@ -81,9 +82,8 @@ if arguments.verbose:
 # get file list
 if arguments.verbose:
     print('  getting file list:')
-# fileList = {p.resolve() for p in pathlib.Path(arguments.path).glob(
-#     "**/*") if p.suffix in [arguments.extensions]}
-fileList = pathlib.Path(arguments.path).glob('**/*')
+fileList = pathlib.Path(arguments.path).glob('**/*') 
+# fileList = pathlib.Path(arguments.path).glob('*')
 for item in fileList:
     tmpFile = dict()
     tmpFile['suffix'] = item.suffix[1:]
@@ -130,10 +130,22 @@ workbookHeader = ['#', 'extension', 'file path', 'file name']
 # iterate over all extensions
 if arguments.verbose:
     print('  creating worksheets:')
+
+# start in second row
+row = 1
+col = 0
 for ext in arguments.extensions:
     if arguments.verbose:
         print('    ', ext, '…', sep='', end='')
-    worksheet = workbook.add_worksheet(ext)
+    if arguments.splitByExtension:
+        worksheet = workbook.add_worksheet(ext)
+
+        # reset rows
+        row = 1
+        col = 0
+    else:
+        if workbook.sheetname_count == 0:
+            worksheet = workbook.add_worksheet()
 
     # write formatted header row
     headerBold = workbook.add_format({'bold': True})
@@ -147,27 +159,47 @@ for ext in arguments.extensions:
     # set autofilter
     worksheet.autofilter(0, 0, 1, 3)
 
-    # start in second row
-    row = 1
-    col = 0
-
     # fill in entries
-    for number, filetype, path, filename in tuple(files[ext]):
-        worksheet.write(row, col,     number)
-        worksheet.write(row, col + 1, filetype)
-        worksheet.write(row, col + 2, path)
-        worksheet.write(row, col + 3, filename)
-        row += 1
+    if arguments.splitByExtension:
+        for number, filetype, path, filename in tuple(files[ext]):
+            worksheet.write(row, col,     number)
+            worksheet.write(row, col + 1, filetype)
+            worksheet.write(row, col + 2, path)
+            worksheet.write(row, col + 3, filename)
+            row += 1
+    else:
+        for number, filetype, path, filename in tuple(files[ext]):
+            worksheet.write(row, col,     row)
+            worksheet.write(row, col + 1, filetype)
+            worksheet.write(row, col + 2, path)
+            worksheet.write(row, col + 3, filename)
+            row += 1
     if row == 1:
         worksheet.write(row, col, 'no files found')
 
     # adjust column widths
-    worksheet.set_column(0, 0, len(str(counter[ext])) + 2)
-    worksheet.set_column(1, 1, max(len(ext), len(workbookHeader[1])) + 2)
-    worksheet.set_column(2, 2, max(maxLengths[ext]['path'], len(workbookHeader[2])) + 2)
-    worksheet.set_column(3, 3, max(maxLengths[ext]['name'], len(workbookHeader[3])) + 2)
+    if arguments.splitByExtension:
+        worksheet.set_column(0, 0, len(str(counter[ext])) + 2)
+        worksheet.set_column(1, 1, max(len(ext), len(workbookHeader[1])) + 2)
+        worksheet.set_column(2, 2, max(maxLengths[ext]['path'], len(workbookHeader[2])) + 2)
+        worksheet.set_column(3, 3, max(maxLengths[ext]['name'], len(workbookHeader[3])) + 2)
     if arguments.verbose:
         print(' done')
+
+# adjust column widths
+if not arguments.splitByExtension:
+    print('row:', len(str(row)))
+    print('len:', len(str(counter['all'] - counter['other'])) + 2)
+    print('max path:', max([maxLengths[i]['path']
+                                for i in maxLengths] + [len(workbookHeader[2])]) + 2)
+    print('max name:', max([maxLengths[i]['name']
+                                for i in maxLengths] + [len(workbookHeader[3])]) + 2)
+    worksheet.set_column(0, 0, len(str(row)) + 2)
+    worksheet.set_column(1, 1, max([len(i) for i in arguments.extensions] + [len(workbookHeader[1])]) + 2)
+    worksheet.set_column(
+        2, 2, max([maxLengths[i]['path'] for i in maxLengths] + [len(workbookHeader[2])]) + 2)
+    worksheet.set_column(
+        3, 3, max([maxLengths[i]['name'] for i in maxLengths] + [len(workbookHeader[3])]) + 2)
 
 # close workbook
 workbook.close()
@@ -175,3 +207,5 @@ workbook.close()
 if arguments.verbose:
     print('  total entries:', counter['all'] - counter['other'])
 print('All done and exiting.')
+
+# %%
