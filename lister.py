@@ -1,16 +1,33 @@
-# #%%
+#%%
 
 #!/usr/bin/python3
 # temporary workaround to run with ipython
 # sys.argv = ['']
 
+# to do:
+# * calculate size of folder from header file (mrxs)
+
 # Parser for command-line options, arguments and sub-commands
 import argparse
 
+# check for boolean value
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')
+
 # check command-line arguments
+class Formatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionHelpFormatter):
+    pass
 parser = argparse.ArgumentParser(
-    description='Check folder for certain microscope digital slide files and exports it to a CSV file.',
-    formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+    description='Check folder for certain microscope digital slide files and exports it to a CSV file.\nE.g.:\n  lister.py -p path/to/myslides -x tiff jpg mrxs -s True -o output.xlsx -v True',
+    formatter_class=Formatter)
+    # formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument(
     '-p', '--path',
     default='/media/dfsP/DIGITALE MIKROSKOPIE',
@@ -19,26 +36,39 @@ parser.add_argument(
     '-x', '--extensions',
     nargs='+',
     default=['mrxs', 'ndpi', 'svs', 'vmic',
-             'vsf'],#, 'xlsx', 'docx', 'txt', 'csv'],
+             'vsf', 'vsi'],#, 'xlsx', 'docx', 'txt', 'csv'],
     help='set the file extensions')
 parser.add_argument(
     '-s', '--splitByExtension',
-    action='store_true',
-    default='True',
+    type=str2bool,
+    nargs='?',
+    const=True,
+    default=False,
     help='split worksheets by file extensions')
 parser.add_argument(
     '-o', '--output',
-    default='/media/dfsP/DIGITALE MIKROSKOPIE/digital slides.xlsx',
-    # default='digital slides.xlsx',
+    # default='/media/dfsP/DIGITALE MIKROSKOPIE/digital slides.xlsx',
+    default='digital slides.xlsx',
     help='set output filename')
 parser.add_argument(
     '-v', '--verbose',
-    action='store_true',
-    default='True',
+    type=str2bool,
+    nargs='?',
+    const=True,
+    default=False,
     help='more output while the script is running')
-arguments = parser.parse_args()
+arguments=parser.parse_args()
 
-print('Starting script:')
+# Basic date and time types
+import datetime
+
+# Babel: Date and Time Formatting
+import babel.dates
+
+currentDate = datetime.date.today()
+
+print('Starting script:', babel.dates.format_date(
+    currentDate, 'EEEE, MMMM dd yyyy'))
 
 # import modules
 if arguments.verbose:
@@ -59,8 +89,8 @@ import re
 # System-specific parameters and functions
 import sys
 
-# Basic date and time types
-import datetime
+# Mathematical functions
+import math
 
 if arguments.verbose:
     print(' done')
@@ -184,7 +214,7 @@ for ext in arguments.extensions:
             worksheet.write(row, col + 5, filesize, numberSpace)
             row += 1
     else:
-        for number, filetype, path, filename in tuple(files[ext]):
+        for number, filetype, path, filename, filedate, filesize in tuple(files[ext]):
             worksheet.write(row, col,     row, numberSpace)
             worksheet.write(row, col + 1, filetype)
             worksheet.write(row, col + 2, path)
@@ -195,9 +225,12 @@ for ext in arguments.extensions:
     if row == 1:
         worksheet.write(row, col, 'no files found')
 
+    # adjust length for thousands separators
+    maxLengths[ext]['size'] += math.floor((maxLengths[ext]['size'] - 1) / 3)
+
     # adjust column widths
     if arguments.splitByExtension:
-        worksheet.set_column(0, 0, len(str(counter[ext])) + 2)
+        worksheet.set_column(0, 0, len(str(counter[ext])) + math.floor((len(str(counter[ext])) - 1) / 3) + 2)
         worksheet.set_column(1, 1, max(len(ext), len(workbookHeader[1])) + 2)
         worksheet.set_column(2, 2, max(maxLengths[ext]['path'], len(workbookHeader[2])) + 2)
         worksheet.set_column(3, 3, max(maxLengths[ext]['name'], len(workbookHeader[3])) + 2)
@@ -208,7 +241,7 @@ for ext in arguments.extensions:
 
 # adjust column widths
 if not arguments.splitByExtension:
-    worksheet.set_column(0, 0, len(str(row)) + 2)
+    worksheet.set_column(0, 0, len(str(row)) + math.floor((len(str(row)) - 1) / 3) + 2)
     worksheet.set_column(1, 1, max([len(i) for i in arguments.extensions] + [len(workbookHeader[1])]) + 2)
     worksheet.set_column(
         2, 2, max([maxLengths[i]['path'] for i in maxLengths] + [len(workbookHeader[2])]) + 2)
