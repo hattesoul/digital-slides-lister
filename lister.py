@@ -257,4 +257,4 @@ workbook.close()
 
 if arguments.verbose:
     print('  total entries:', counter['all'] - counter['other'])
-print('All done and exiting.')
+print('All done and exiting.\n')
