@@ -5,7 +5,7 @@
 # sys.argv = ['']
 
 # to do:
-# * add links to files
+# * add links to files and folders (✅ 2020-10-12)
 # * calculate size of folder from header file (mrxs)
 
 # Parser for command-line options, arguments and sub-commands
@@ -100,6 +100,9 @@ if arguments.verbose:
 counter = dict()
 counter['all'] = 0
 counter['other'] = 0
+paths = dict()
+paths['windows'] = 'L:'
+paths['linux'] = '/media/dfsP'
 files = dict()
 maxLengths = dict()
 for ext in arguments.extensions:
@@ -126,7 +129,8 @@ for item in fileList:
     if tmpFile['suffix'] in arguments.extensions:
         counter['all'] += 1
         counter[tmpFile['suffix']] += 1
-        tmpFile['path'] = '/'.join(item.parts[:-1])[1:]
+        # remove base linux path
+        tmpFile['path'] = '\\'.join(item.parts[:-1])[len(paths['linux']) + 2:]
         tmpFile['name'] = item.name
         tmpFile['date'] = datetime.datetime.fromtimestamp(item.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
         tmpFile['size'] = item.stat().st_size
@@ -192,7 +196,7 @@ for ext in arguments.extensions:
     headerBold = workbook.add_format({'bold': True})
     headerBoldRight = workbook.add_format({'bold': True, 'align': 'right'})
     numberSpace = workbook.add_format(
-        {'num_format': '### ### ### ### ### ##0'})
+        {'num_format': '### ### ### ### ### ### ### ##0'})
     for i in range(len(workbookHeader)):
         worksheet.write(0, i, workbookHeader[i], (headerBoldRight if (i == 0 or i == 5) else headerBold))
 
@@ -207,8 +211,8 @@ for ext in arguments.extensions:
         for number, filetype, path, filename, filedate, filesize in tuple(files[ext]):
             worksheet.write(row, col,     number, numberSpace)
             worksheet.write(row, col + 1, filetype)
-            worksheet.write(row, col + 2, path)
-            worksheet.write(row, col + 3, filename)
+            worksheet.write_url(row, col + 2, paths['windows'] + '\\' + path, string=path)
+            worksheet.write_url(row, col + 3, paths['windows'] + '\\' + path + '\\' + filename, string=filename)
             worksheet.write(row, col + 4, filedate)
             worksheet.write(row, col + 5, filesize, numberSpace)
             row += 1
@@ -216,8 +220,8 @@ for ext in arguments.extensions:
         for number, filetype, path, filename, filedate, filesize in tuple(files[ext]):
             worksheet.write(row, col,     row, numberSpace)
             worksheet.write(row, col + 1, filetype)
-            worksheet.write(row, col + 2, path)
-            worksheet.write(row, col + 3, filename)
+            worksheet.write_url(row, col + 2, paths['windows'] + '\\' + path, string = path)
+            worksheet.write_url(row, col + 3, paths['windows'] + '\\' + path + '\\' + filename, string = filename)
             worksheet.write(row, col + 4, filedate)
             worksheet.write(row, col + 5, filesize, numberSpace)
             row += 1
