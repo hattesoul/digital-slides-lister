@@ -6,7 +6,7 @@
 
 # to do:
 # * add links to files and folders (✅ 2020-10-12)
-# * calculate size of folder from header file (mrxs)
+# * calculate size of folder from header file (mrxs, vsf)
 
 # Parser for command-line options, arguments and sub-commands
 import argparse
@@ -14,7 +14,7 @@ import argparse
 # check for boolean value
 def str2bool(v):
     if isinstance(v, bool):
-       return v
+        return v
     if v.lower() in ('yes', 'true', 't', 'y', '1'):
         return True
     elif v.lower() in ('no', 'false', 'f', 'n', '0'):
@@ -76,9 +76,6 @@ if arguments.verbose:
 # Creating Excel XLSX files
 import xlsxwriter
 
-# Miscellaneous operating system interfaces
-import os
-
 # Object-oriented filesystem paths
 import pathlib
 
@@ -104,6 +101,7 @@ paths = dict()
 paths['windows'] = 'L:'
 paths['linux'] = '/media/dfsP'
 files = dict()
+folderSizes = dict()
 maxLengths = dict()
 for ext in arguments.extensions:
     counter[ext] = 0
@@ -125,12 +123,26 @@ for item in fileList:
     tmpFile = dict()
     tmpFile['suffix'] = item.suffix[1:]
 
+    # calculate folder size
+    if tmpFile['suffix'] in ['img', 'dat']:
+        if re.match('(.+-level\d+\.img)|(Data\d+\.dat)', item.name):
+            if str(item.parent) in folderSizes:
+                folderSizes[str(item.parent)] += item.stat().st_size
+            else:
+                folderSizes[str(item.parent)] = item.stat().st_size
+
     # use only 'valid' file extensions
     if tmpFile['suffix'] in arguments.extensions:
         counter['all'] += 1
         counter[tmpFile['suffix']] += 1
+
         # remove base linux path
         tmpFile['path'] = '\\'.join(item.parts[:-1])[len(paths['linux']) + 2:]
+        # tmpFile['path'] = '\\'.join(item.parts[:-1])
+
+        # correct path for MRXS files
+        if tmpFile['suffix'] == 'mrxs':
+            tmpFile['path'] += '\\' + item.name[:-5]
         tmpFile['name'] = item.name
         tmpFile['date'] = datetime.datetime.fromtimestamp(item.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
         tmpFile['size'] = item.stat().st_size
@@ -150,6 +162,12 @@ for item in fileList:
         if item.is_file():
             counter['all'] += 1
             counter['other'] += 1
+
+# insert folder sizes after full iteration
+for item in files['vsf']:
+    files['vsf'][item[0] - 1][5] = folderSizes[item[2].replace('\\', '/')]
+for item in files['mrxs']:
+    files['mrxs'][item[0] - 1][5] = folderSizes[item[2].replace('\\', '/')]
 
 # exit if no files were found
 if counter['all'] == 0:
@@ -233,7 +251,7 @@ for ext in arguments.extensions:
 
     # adjust column widths
     if arguments.splitByExtension:
-        worksheet.set_column(0, 0, len(str(counter[ext])) + math.floor((len(str(counter[ext])) - 1) / 3) + 2)
+        worksheet.set_column(0, 0, len(str(counter[ext])) + math.floor((len(str(counter[ext])) - 1) / 3) + 3)
         worksheet.set_column(1, 1, max(len(ext), len(workbookHeader[1])) + 2)
         worksheet.set_column(2, 2, max(maxLengths[ext]['path'], len(workbookHeader[2])) + 2)
         worksheet.set_column(3, 3, max(maxLengths[ext]['name'], len(workbookHeader[3])) + 2)
@@ -244,7 +262,7 @@ for ext in arguments.extensions:
 
 # adjust column widths
 if not arguments.splitByExtension:
-    worksheet.set_column(0, 0, len(str(row)) + math.floor((len(str(row)) - 1) / 3) + 2)
+    worksheet.set_column(0, 0, len(str(row)) + math.floor((len(str(row)) - 1) / 3) + 3)
     worksheet.set_column(1, 1, max([len(i) for i in arguments.extensions] + [len(workbookHeader[1])]) + 2)
     worksheet.set_column(
         2, 2, max([maxLengths[i]['path'] for i in maxLengths] + [len(workbookHeader[2])]) + 2)
