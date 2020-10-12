@@ -5,6 +5,7 @@
 # sys.argv = ['']
 
 # to do:
+# * add links to files
 # * calculate size of folder from header file (mrxs)
 
 # Parser for command-line options, arguments and sub-commands
@@ -27,7 +28,6 @@ class Formatter(argparse.ArgumentDefaultsHelpFormatter, argparse.RawDescriptionH
 parser = argparse.ArgumentParser(
     description='Check folder for certain microscope digital slide files and exports it to a CSV file.\nE.g.:\n  lister.py -p path/to/myslides -x tiff jpg mrxs -s True -o output.xlsx -v True',
     formatter_class=Formatter)
-    # formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 parser.add_argument(
     '-p', '--path',
     default='/media/dfsP/DIGITALE MIKROSKOPIE',
@@ -47,7 +47,6 @@ parser.add_argument(
     help='split worksheets by file extensions')
 parser.add_argument(
     '-o', '--output',
-    # default='/media/dfsP/DIGITALE MIKROSKOPIE/digital slides.xlsx',
     default='digital slides.xlsx',
     help='set output filename')
 parser.add_argument(
