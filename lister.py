@@ -6,7 +6,9 @@
 
 # to do:
 # * add links to files and folders (✅ 2020-10-12)
-# * calculate size of folder from header file (mrxs, vsf)
+# * calculate size of folder from header file (mrxs, vsf) (✅ 2020-10-13)
+# * correct file links for MRXS files (✅ 2020-10-13)
+# * fix ignoring new URLs if limit exceeds (65 530 maximum)
 
 # Parser for command-line options, arguments and sub-commands
 import argparse
@@ -35,8 +37,7 @@ parser.add_argument(
 parser.add_argument(
     '-x', '--extensions',
     nargs='+',
-    default=['mrxs', 'ndpi', 'svs', 'vmic',
-             'vsf', 'vsi'],#, 'xlsx', 'docx', 'txt', 'csv'],
+    default=['mrxs', 'ndpi', 'svs', 'vmic', 'vsf', 'vsi'],
     help='set the file extensions')
 parser.add_argument(
     '-s', '--splitByExtension',
@@ -118,7 +119,6 @@ if arguments.verbose:
 if arguments.verbose:
     print('  getting file list:')
 fileList = pathlib.Path(arguments.path).glob('**/*') 
-# fileList = pathlib.Path(arguments.path).glob('*')
 for item in fileList:
     tmpFile = dict()
     tmpFile['suffix'] = item.suffix[1:]
@@ -165,9 +165,15 @@ for item in fileList:
 
 # insert folder sizes after full iteration
 for item in files['vsf']:
-    files['vsf'][item[0] - 1][5] = folderSizes[item[2].replace('\\', '/')]
+    if paths['linux'] + '/' + item[2].replace('\\', '/') in folderSizes:
+        files['vsf'][item[0] - 1][5] = folderSizes[paths['linux'] + '/' + item[2].replace('\\', '/')]
+        if len(str(files['vsf'][item[0] - 1][5])) > maxLengths['vsf']['size']:
+            maxLengths['vsf']['size'] = len(str(files['vsf'][item[0] - 1][5]))
 for item in files['mrxs']:
-    files['mrxs'][item[0] - 1][5] = folderSizes[item[2].replace('\\', '/')]
+    if paths['linux'] + '/' + item[2].replace('\\', '/') in folderSizes:
+        files['mrxs'][item[0] - 1][5] = folderSizes[paths['linux'] + '/' + item[2].replace('\\', '/')]
+        if len(str(files['mrxs'][item[0] - 1][5])) > maxLengths['mrxs']['size']:
+            maxLengths['mrxs']['size'] = len(str(files['mrxs'][item[0] - 1][5]))
 
 # exit if no files were found
 if counter['all'] == 0:
@@ -187,8 +193,7 @@ if arguments.verbose:
     print(' done')
 
 # table headers
-workbookHeader = ['#', 'extension', 'file path',
-                  'file name', 'file date', 'file size']
+workbookHeader = ['#', 'extension', 'file path', 'file name', 'file date', 'file size']
 
 # iterate over all extensions
 if arguments.verbose:
@@ -230,7 +235,10 @@ for ext in arguments.extensions:
             worksheet.write(row, col,     number, numberSpace)
             worksheet.write(row, col + 1, filetype)
             worksheet.write_url(row, col + 2, paths['windows'] + '\\' + path, string=path)
-            worksheet.write_url(row, col + 3, paths['windows'] + '\\' + path + '\\' + filename, string=filename)
+            if ext == 'mrxs':
+                worksheet.write_url(row, col + 3, paths['windows'] + '\\' + re.match('^(.+)\\\.+$', path).group(1) + '\\' + filename, string=filename)
+            else:
+                worksheet.write_url(row, col + 3, paths['windows'] + '\\' + path + '\\' + filename, string=filename)
             worksheet.write(row, col + 4, filedate)
             worksheet.write(row, col + 5, filesize, numberSpace)
             row += 1
@@ -239,7 +247,10 @@ for ext in arguments.extensions:
             worksheet.write(row, col,     row, numberSpace)
             worksheet.write(row, col + 1, filetype)
             worksheet.write_url(row, col + 2, paths['windows'] + '\\' + path, string = path)
-            worksheet.write_url(row, col + 3, paths['windows'] + '\\' + path + '\\' + filename, string = filename)
+            if ext == 'mrxs':
+                worksheet.write_url(row, col + 3, paths['windows'] + '\\' + re.match('^(.+)\\\.+$', path).group(1) + '\\' + filename, string=filename)
+            else:
+                worksheet.write_url(row, col + 3, paths['windows'] + '\\' + path + '\\' + filename, string=filename)
             worksheet.write(row, col + 4, filedate)
             worksheet.write(row, col + 5, filesize, numberSpace)
             row += 1

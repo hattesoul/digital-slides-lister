@@ -1,4 +1,5 @@
 *.xlsx
 *.xlsx#
+*.txt
 .vscode/settings.json
 test
