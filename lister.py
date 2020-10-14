@@ -1,5 +1,3 @@
-#%%
-
 #!/usr/bin/python3
 # temporary workaround to run with ipython
 # sys.argv = ['']
@@ -8,7 +6,8 @@
 # * add links to files and folders (✅ 2020-10-12)
 # * calculate size of folder from header file (mrxs, vsf) (✅ 2020-10-13)
 # * correct file links for MRXS files (✅ 2020-10-13)
-# * fix ignoring new URLs if limit exceeds (65 530 maximum)
+# * fix ignoring new URLs if limit exceeds (65 530 maximum) (✅ 2020-10-14)
+# * delete test files (Neuer Ordner/test)
 
 # Parser for command-line options, arguments and sub-commands
 import argparse
@@ -98,6 +97,8 @@ if arguments.verbose:
 counter = dict()
 counter['all'] = 0
 counter['other'] = 0
+counter['URLs'] = 65530
+uniqueSuffix = 'üöäüöäüß'
 paths = dict()
 paths['windows'] = 'L:'
 paths['linux'] = '/media/dfsP'
@@ -174,6 +175,8 @@ for item in files['mrxs']:
         files['mrxs'][item[0] - 1][5] = folderSizes[paths['linux'] + '/' + item[2].replace('\\', '/')]
         if len(str(files['mrxs'][item[0] - 1][5])) > maxLengths['mrxs']['size']:
             maxLengths['mrxs']['size'] = len(str(files['mrxs'][item[0] - 1][5]))
+    else:
+        files['mrxs'][item[0] - 1][2] += uniqueSuffix
 
 # exit if no files were found
 if counter['all'] == 0:
@@ -232,25 +235,58 @@ for ext in arguments.extensions:
     # fill in entries
     if arguments.splitByExtension:
         for number, filetype, path, filename, filedate, filesize in tuple(files[ext]):
-            worksheet.write(row, col,     number, numberSpace)
+            worksheet.write(row, col, number, numberSpace)
             worksheet.write(row, col + 1, filetype)
-            worksheet.write_url(row, col + 2, paths['windows'] + '\\' + path, string=path)
+
             if ext == 'mrxs':
-                worksheet.write_url(row, col + 3, paths['windows'] + '\\' + re.match('^(.+)\\\.+$', path).group(1) + '\\' + filename, string=filename)
+                if re.match('.+' + uniqueSuffix + '$', path):
+                    shortPath = re.match('^(.+)\\\.+' + uniqueSuffix + '$', path).group(1)
+                    worksheet.write(row, col + 2, shortPath)
+                elif counter['URLs'] > 0:
+                    worksheet.write_url(row, col + 2, paths['windows'] + '\\' + path, string=path)
+                    counter['URLs'] -= 1
+                else:
+                    worksheet.write(row, col + 2, path)
             else:
-                worksheet.write_url(row, col + 3, paths['windows'] + '\\' + path + '\\' + filename, string=filename)
+                worksheet.write(row, col + 2, path)
+            if counter['URLs'] > 0:
+                if ext == 'mrxs':
+                    worksheet.write_url(row, col + 3, paths['windows'] + '\\' + re.match('^(.+)\\\.+$', path).group(1) + '\\' + filename, string=filename)
+                else:
+                    worksheet.write_url(row, col + 3, paths['windows'] + '\\' + path + '\\' + filename, string=filename)
+                counter['URLs'] -= 1
+            else:
+                worksheet.write(row, col + 3, filename)
             worksheet.write(row, col + 4, filedate)
             worksheet.write(row, col + 5, filesize, numberSpace)
             row += 1
     else:
         for number, filetype, path, filename, filedate, filesize in tuple(files[ext]):
-            worksheet.write(row, col,     row, numberSpace)
+            worksheet.write(row, col, row, numberSpace)
             worksheet.write(row, col + 1, filetype)
-            worksheet.write_url(row, col + 2, paths['windows'] + '\\' + path, string = path)
+
             if ext == 'mrxs':
-                worksheet.write_url(row, col + 3, paths['windows'] + '\\' + re.match('^(.+)\\\.+$', path).group(1) + '\\' + filename, string=filename)
+                if re.match('.+' + uniqueSuffix + '$', path):
+                    shortPath = re.match('^(.+)\\\.+' + uniqueSuffix + '$', path).group(1)
+                    worksheet.write(row, col + 2, shortPath)
+                elif counter['URLs'] > 0:
+                    worksheet.write_url(
+                        row, col + 2, paths['windows'] + '\\' + path, string=path)
+                    counter['URLs'] -= 1
+                else:
+                    worksheet.write(row, col + 2, path)
             else:
-                worksheet.write_url(row, col + 3, paths['windows'] + '\\' + path + '\\' + filename, string=filename)
+                worksheet.write(row, col + 2, path)
+            if counter['URLs'] > 0:
+                if ext == 'mrxs':
+                    worksheet.write_url(row, col + 3, paths['windows'] + '\\' + re.match(
+                        '^(.+)\\\.+$', path).group(1) + '\\' + filename, string=filename)
+                else:
+                    worksheet.write_url(
+                        row, col + 3, paths['windows'] + '\\' + path + '\\' + filename, string=filename)
+                counter['URLs'] -= 1
+            else:
+                worksheet.write(row, col + 3, filename)
             worksheet.write(row, col + 4, filedate)
             worksheet.write(row, col + 5, filesize, numberSpace)
             row += 1
