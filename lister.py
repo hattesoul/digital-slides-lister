@@ -7,7 +7,9 @@
 # * calculate size of folder from header file (mrxs, vsf) (✅ 2020-10-13)
 # * correct file links for MRXS files (✅ 2020-10-13)
 # * fix ignoring new URLs if limit exceeds (65 530 maximum) (✅ 2020-10-14)
-# * delete test files (Neuer Ordner/test)
+# * delete test files (Neuer Ordner/test) (✅ 2020-10-15)
+# * JSON export for HTML search form
+# * make hyperlinks optional (✅ 2020-10-15)
 
 # Parser for command-line options, arguments and sub-commands
 import argparse
@@ -45,6 +47,13 @@ parser.add_argument(
     const=True,
     default=False,
     help='split worksheets by file extensions')
+parser.add_argument(
+    '-l', '--links',
+    type=str2bool,
+    nargs='?',
+    const=True,
+    default=False,
+    help='insert hyperlinks to files and folders')
 parser.add_argument(
     '-o', '--output',
     default='digital slides.xlsx',
@@ -139,7 +148,6 @@ for item in fileList:
 
         # remove base linux path
         tmpFile['path'] = '\\'.join(item.parts[:-1])[len(paths['linux']) + 2:]
-        # tmpFile['path'] = '\\'.join(item.parts[:-1])
 
         # correct path for MRXS files
         if tmpFile['suffix'] == 'mrxs':
@@ -242,14 +250,14 @@ for ext in arguments.extensions:
                 if re.match('.+' + uniqueSuffix + '$', path):
                     shortPath = re.match('^(.+)\\\.+' + uniqueSuffix + '$', path).group(1)
                     worksheet.write(row, col + 2, shortPath)
-                elif counter['URLs'] > 0:
+                elif arguments.links and counter['URLs'] > 0:
                     worksheet.write_url(row, col + 2, paths['windows'] + '\\' + path, string=path)
                     counter['URLs'] -= 1
                 else:
                     worksheet.write(row, col + 2, path)
             else:
                 worksheet.write(row, col + 2, path)
-            if counter['URLs'] > 0:
+            if arguments.links and counter['URLs'] > 0:
                 if ext == 'mrxs':
                     worksheet.write_url(row, col + 3, paths['windows'] + '\\' + re.match('^(.+)\\\.+$', path).group(1) + '\\' + filename, string=filename)
                 else:
@@ -269,7 +277,7 @@ for ext in arguments.extensions:
                 if re.match('.+' + uniqueSuffix + '$', path):
                     shortPath = re.match('^(.+)\\\.+' + uniqueSuffix + '$', path).group(1)
                     worksheet.write(row, col + 2, shortPath)
-                elif counter['URLs'] > 0:
+                elif arguments.links and counter['URLs'] > 0:
                     worksheet.write_url(
                         row, col + 2, paths['windows'] + '\\' + path, string=path)
                     counter['URLs'] -= 1
@@ -277,7 +285,7 @@ for ext in arguments.extensions:
                     worksheet.write(row, col + 2, path)
             else:
                 worksheet.write(row, col + 2, path)
-            if counter['URLs'] > 0:
+            if arguments.links and counter['URLs'] > 0:
                 if ext == 'mrxs':
                     worksheet.write_url(row, col + 3, paths['windows'] + '\\' + re.match(
                         '^(.+)\\\.+$', path).group(1) + '\\' + filename, string=filename)
