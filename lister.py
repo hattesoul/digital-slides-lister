@@ -10,6 +10,7 @@
 # * delete test files (Neuer Ordner/test) (✅ 2020-10-15)
 # * JSON export for HTML search form
 # * make hyperlinks optional (✅ 2020-10-15)
+# * fix encoding issue (✅ 2020-11-02)
 
 # Parser for command-line options, arguments and sub-commands
 import argparse
@@ -152,7 +153,8 @@ for item in fileList:
         # correct path for MRXS files
         if tmpFile['suffix'] == 'mrxs':
             tmpFile['path'] += '\\' + item.name[:-5]
-        tmpFile['name'] = item.name
+        tmpFile['path'] = tmpFile['path'].encode('utf8', 'surrogateescape').decode('ISO-8859-15')
+        tmpFile['name'] = item.name.encode('utf8', 'surrogateescape').decode('ISO-8859-15')
         tmpFile['date'] = datetime.datetime.fromtimestamp(item.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
         tmpFile['size'] = item.stat().st_size
 
@@ -173,18 +175,20 @@ for item in fileList:
             counter['other'] += 1
 
 # insert folder sizes after full iteration
-for item in files['vsf']:
-    if paths['linux'] + '/' + item[2].replace('\\', '/') in folderSizes:
-        files['vsf'][item[0] - 1][5] = folderSizes[paths['linux'] + '/' + item[2].replace('\\', '/')]
-        if len(str(files['vsf'][item[0] - 1][5])) > maxLengths['vsf']['size']:
-            maxLengths['vsf']['size'] = len(str(files['vsf'][item[0] - 1][5]))
-for item in files['mrxs']:
-    if paths['linux'] + '/' + item[2].replace('\\', '/') in folderSizes:
-        files['mrxs'][item[0] - 1][5] = folderSizes[paths['linux'] + '/' + item[2].replace('\\', '/')]
-        if len(str(files['mrxs'][item[0] - 1][5])) > maxLengths['mrxs']['size']:
-            maxLengths['mrxs']['size'] = len(str(files['mrxs'][item[0] - 1][5]))
-    else:
-        files['mrxs'][item[0] - 1][2] += uniqueSuffix
+if 'vsf' in arguments.extensions:
+    for item in files['vsf']:
+        if paths['linux'] + '/' + item[2].replace('\\', '/') in folderSizes:
+            files['vsf'][item[0] - 1][5] = folderSizes[paths['linux'] + '/' + item[2].replace('\\', '/')]
+            if len(str(files['vsf'][item[0] - 1][5])) > maxLengths['vsf']['size']:
+                maxLengths['vsf']['size'] = len(str(files['vsf'][item[0] - 1][5]))
+if 'mrxs' in arguments.extensions:
+    for item in files['mrxs']:
+        if paths['linux'] + '/' + item[2].replace('\\', '/') in folderSizes:
+            files['mrxs'][item[0] - 1][5] = folderSizes[paths['linux'] + '/' + item[2].replace('\\', '/')]
+            if len(str(files['mrxs'][item[0] - 1][5])) > maxLengths['mrxs']['size']:
+                maxLengths['mrxs']['size'] = len(str(files['mrxs'][item[0] - 1][5]))
+        else:
+            files['mrxs'][item[0] - 1][2] += uniqueSuffix
 
 # exit if no files were found
 if counter['all'] == 0:
