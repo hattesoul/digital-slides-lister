@@ -11,6 +11,7 @@
 # * JSON export for HTML search form
 # * make hyperlinks optional (✅ 2020-10-15)
 # * fix encoding issue (✅ 2020-11-02)
+# * fix for VSI folder size (✅ 2021-03-04)
 
 # Parser for command-line options, arguments and sub-commands
 import argparse
@@ -135,12 +136,17 @@ for item in fileList:
     tmpFile['suffix'] = item.suffix[1:]
 
     # calculate folder size
-    if tmpFile['suffix'] in ['img', 'dat']:
+    if tmpFile['suffix'] in ['img', 'dat', 'ets']:
         if re.match('(.+-level\d+\.img)|(Data\d+\.dat)', item.name):
             if str(item.parent) in folderSizes:
                 folderSizes[str(item.parent)] += item.stat().st_size
             else:
                 folderSizes[str(item.parent)] = item.stat().st_size
+        if re.match('frame_t\.ets', item.name):
+            if str(item.parent.parent) in folderSizes:
+                folderSizes[str(item.parent.parent)] += item.stat().st_size
+            else:
+                folderSizes[str(item.parent.parent)] = item.stat().st_size
 
     # use only 'valid' file extensions
     if tmpFile['suffix'] in arguments.extensions:
@@ -153,6 +159,9 @@ for item in fileList:
         # correct path for MRXS files
         if tmpFile['suffix'] == 'mrxs':
             tmpFile['path'] += '\\' + item.name[:-5]
+        # correct path for VSI files
+        if tmpFile['suffix'] == 'vsi':
+            tmpFile['path'] += '\\_' + item.name[:-4] + '_'
         tmpFile['path'] = tmpFile['path'].encode('utf8', 'surrogateescape').decode('ISO-8859-15')
         tmpFile['name'] = item.name.encode('utf8', 'surrogateescape').decode('ISO-8859-15')
         tmpFile['date'] = datetime.datetime.fromtimestamp(item.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
@@ -189,6 +198,15 @@ if 'mrxs' in arguments.extensions:
                 maxLengths['mrxs']['size'] = len(str(files['mrxs'][item[0] - 1][5]))
         else:
             files['mrxs'][item[0] - 1][2] += uniqueSuffix
+if 'vsi' in arguments.extensions:
+    for item in files['vsi']:
+        if paths['linux'] + '/' + item[2].replace('\\', '/')  in folderSizes:
+            files['vsi'][item[0] - 1][5] = folderSizes[paths['linux'] + '/' + item[2].replace('\\', '/')]
+            if len(str(files['vsi'][item[0] - 1][5])) > maxLengths['vsi']['size']:
+                maxLengths['vsi']['size'] = len(
+                    str(files['vsi'][item[0] - 1][5]))
+        else:
+            files['vsi'][item[0] - 1][2] += uniqueSuffix
 
 # exit if no files were found
 if counter['all'] == 0:
