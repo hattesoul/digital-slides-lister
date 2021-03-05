@@ -138,15 +138,15 @@ for item in fileList:
     # calculate folder size
     if tmpFile['suffix'] in ['img', 'dat', 'ets']:
         if re.match('(.+-level\d+\.img)|(Data\d+\.dat)', item.name):
-            if str(item.parent) in folderSizes:
-                folderSizes[str(item.parent)] += item.stat().st_size
+            if str(item.parent).encode('utf8', 'surrogateescape').decode('ISO-8859-15') in folderSizes:
+                folderSizes[str(item.parent).encode('utf8', 'surrogateescape').decode('ISO-8859-15')] += item.stat().st_size
             else:
-                folderSizes[str(item.parent)] = item.stat().st_size
+                folderSizes[str(item.parent).encode('utf8', 'surrogateescape').decode('ISO-8859-15')] = item.stat().st_size
         if re.match('frame_t\.ets', item.name):
-            if str(item.parent.parent) in folderSizes:
-                folderSizes[str(item.parent.parent)] += item.stat().st_size
+            if str(item.parent.parent).encode('utf8', 'surrogateescape').decode('ISO-8859-15') in folderSizes:
+                folderSizes[str(item.parent.parent).encode('utf8', 'surrogateescape').decode('ISO-8859-15')] += item.stat().st_size
             else:
-                folderSizes[str(item.parent.parent)] = item.stat().st_size
+                folderSizes[str(item.parent.parent).encode('utf8', 'surrogateescape').decode('ISO-8859-15')] = item.stat().st_size
 
     # use only 'valid' file extensions
     if tmpFile['suffix'] in arguments.extensions:
@@ -176,6 +176,8 @@ for item in fileList:
             maxLengths[tmpFile['suffix']]['date'] = len(tmpFile['date'])
         if len(str(tmpFile['size'])) > maxLengths[tmpFile['suffix']]['size']:
             maxLengths[tmpFile['suffix']]['size'] = len(str(tmpFile['size']))
+
+        # add file to list
         files[tmpFile['suffix']].append(
             [counter[tmpFile['suffix']], tmpFile['suffix'], tmpFile['path'], tmpFile['name'], tmpFile['date'], tmpFile['size']])
     else:
@@ -200,7 +202,7 @@ if 'mrxs' in arguments.extensions:
             files['mrxs'][item[0] - 1][2] += uniqueSuffix
 if 'vsi' in arguments.extensions:
     for item in files['vsi']:
-        if paths['linux'] + '/' + item[2].replace('\\', '/')  in folderSizes:
+        if paths['linux'] + '/' + item[2].replace('\\', '/') in folderSizes:
             files['vsi'][item[0] - 1][5] = folderSizes[paths['linux'] + '/' + item[2].replace('\\', '/')]
             if len(str(files['vsi'][item[0] - 1][5])) > maxLengths['vsi']['size']:
                 maxLengths['vsi']['size'] = len(
@@ -268,7 +270,7 @@ for ext in arguments.extensions:
             worksheet.write(row, col, number, numberSpace)
             worksheet.write(row, col + 1, filetype)
 
-            if ext == 'mrxs':
+            if ext in ['mrxs', 'vsi']:
                 if re.match('.+' + uniqueSuffix + '$', path):
                     shortPath = re.match('^(.+)\\\.+' + uniqueSuffix + '$', path).group(1)
                     worksheet.write(row, col + 2, shortPath)
@@ -280,7 +282,7 @@ for ext in arguments.extensions:
             else:
                 worksheet.write(row, col + 2, path)
             if arguments.links and counter['URLs'] > 0:
-                if ext == 'mrxs':
+                if ext in ['mrxs', 'vsi']:
                     worksheet.write_url(row, col + 3, paths['windows'] + '\\' + re.match('^(.+)\\\.+$', path).group(1) + '\\' + filename, string=filename)
                 else:
                     worksheet.write_url(row, col + 3, paths['windows'] + '\\' + path + '\\' + filename, string=filename)
@@ -295,7 +297,7 @@ for ext in arguments.extensions:
             worksheet.write(row, col, row, numberSpace)
             worksheet.write(row, col + 1, filetype)
 
-            if ext == 'mrxs':
+            if ext in ['mrxs', 'vsi']:
                 if re.match('.+' + uniqueSuffix + '$', path):
                     shortPath = re.match('^(.+)\\\.+' + uniqueSuffix + '$', path).group(1)
                     worksheet.write(row, col + 2, shortPath)
@@ -308,7 +310,7 @@ for ext in arguments.extensions:
             else:
                 worksheet.write(row, col + 2, path)
             if arguments.links and counter['URLs'] > 0:
-                if ext == 'mrxs':
+                if ext in ['mrxs', 'vsi']:
                     worksheet.write_url(row, col + 3, paths['windows'] + '\\' + re.match(
                         '^(.+)\\\.+$', path).group(1) + '\\' + filename, string=filename)
                 else:
